@@ -2,7 +2,10 @@ package com.bms;
 
 import com.bms.repository.BookRepository;
 import com.bms.repository.JdbcBookRepository;
+import com.bms.repository.JdbcSaleRepository;
+import com.bms.repository.SaleRepository;
 import com.bms.service.BookService;
+import com.bms.service.SaleService;
 import com.bms.ui.MainFrame;
 import com.bms.util.DatabaseUtil;
 
@@ -24,11 +27,13 @@ public class App {
             return;
         }
 
-        BookRepository repository = new JdbcBookRepository();
-        BookService service = new BookService(repository);
+        BookRepository bookRepository = new JdbcBookRepository();
+        SaleRepository saleRepository = new JdbcSaleRepository();
+        SaleService saleService = new SaleService(saleRepository);
+        BookService bookService = new BookService(bookRepository, saleService);
 
         SwingUtilities.invokeLater(() -> {
-            MainFrame frame = new MainFrame(service);
+            MainFrame frame = new MainFrame(bookService, saleService);
             frame.setVisible(true);
         });
     }

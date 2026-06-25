@@ -39,7 +39,7 @@ public class DatabaseUtil {
      * 初始化数据库表结构。
      */
     public static void initializeDatabase() {
-        String sql = "CREATE TABLE IF NOT EXISTS books (" +
+        String booksSql = "CREATE TABLE IF NOT EXISTS books (" +
                 "isbn VARCHAR(20) PRIMARY KEY, " +
                 "title VARCHAR(100) NOT NULL, " +
                 "publisher VARCHAR(100), " +
@@ -48,9 +48,19 @@ public class DatabaseUtil {
                 "price DECIMAL(10, 2) NOT NULL CHECK (price >= 0)" +
                 ")";
 
+        String salesSql = "CREATE TABLE IF NOT EXISTS sales (" +
+                "id BIGINT AUTO_INCREMENT PRIMARY KEY, " +
+                "isbn VARCHAR(20) NOT NULL, " +
+                "title VARCHAR(100) NOT NULL, " +
+                "quantity INT NOT NULL CHECK (quantity > 0), " +
+                "amount DECIMAL(10, 2) NOT NULL, " +
+                "sale_time TIMESTAMP NOT NULL" +
+                ")";
+
         try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
-            stmt.execute(sql);
+            stmt.execute(booksSql);
+            stmt.execute(salesSql);
         } catch (SQLException e) {
             throw new RuntimeException("初始化数据库失败", e);
         }

@@ -1,6 +1,7 @@
 package com.bms.ui;
 
 import com.bms.service.BookService;
+import com.bms.service.SaleService;
 
 import javax.swing.*;
 import java.awt.*;
@@ -11,9 +12,11 @@ import java.awt.*;
 public class MainFrame extends JFrame {
 
     private final BookService bookService;
+    private final SaleService saleService;
 
-    public MainFrame(BookService bookService) {
+    public MainFrame(BookService bookService, SaleService saleService) {
         this.bookService = bookService;
+        this.saleService = saleService;
         initUI();
     }
 
@@ -26,6 +29,7 @@ public class MainFrame extends JFrame {
         JTabbedPane tabbedPane = new JTabbedPane();
         tabbedPane.addTab("图书管理", new BookManagePanel(bookService));
         tabbedPane.addTab("图书销售", new SalesPanel(bookService));
+        tabbedPane.addTab("销售记录", new SalesHistoryPanel(saleService));
         tabbedPane.addTab("统计分析", new StatsPanel(bookService));
 
         add(tabbedPane, BorderLayout.CENTER);

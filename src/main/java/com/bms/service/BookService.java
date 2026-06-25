@@ -13,9 +13,11 @@ import java.util.Optional;
 public class BookService {
 
     private final BookRepository bookRepository;
+    private final SaleService saleService;
 
-    public BookService(BookRepository bookRepository) {
+    public BookService(BookRepository bookRepository, SaleService saleService) {
         this.bookRepository = bookRepository;
+        this.saleService = saleService;
     }
 
     /**
@@ -141,6 +143,7 @@ public class BookService {
         BigDecimal amount = book.calculateAmount(quantity);
         book.setStock(book.getStock() - quantity);
         bookRepository.update(book);
+        saleService.recordSale(book.getIsbn(), book.getTitle(), quantity, amount);
         return amount;
     }
 

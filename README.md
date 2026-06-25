@@ -6,6 +6,8 @@ Java 课程设计：基于 Swing + H2 数据库的桌面图书管理系统。
 
 - 图书信息管理：添加、查询、修改、删除
 - 图书销售：按 ISBN 销售，自动扣减库存，使用 BigDecimal 精确计算金额
+- 图书销售：按 ISBN 销售，自动扣减库存，使用 BigDecimal 精确计算金额
+- 销售记录：每次销售自动记录，支持查看历史销售明细、总笔数与总金额
 - 统计分析：按价格、库存量、作者、出版社排序展示
 - 数据持久化：H2 嵌入式数据库，程序重启后数据不丢失
 
@@ -18,12 +20,6 @@ Java 课程设计：基于 Swing + H2 数据库的桌面图书管理系统。
 - JDBC
 
 ## 运行方式
-
-```bash
-mvn clean compile exec:java -Dexec.mainClass="com.bms.App"
-```
-
-或打包运行：
 
 ```bash
 mvn clean package

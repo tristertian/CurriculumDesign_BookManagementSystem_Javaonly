@@ -1,7 +1,9 @@
 package com.bms.service;
 
 import com.bms.entity.Book;
+import com.bms.entity.Sale;
 import com.bms.repository.BookRepository;
+import com.bms.repository.SaleRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -16,10 +18,13 @@ import static org.junit.jupiter.api.Assertions.*;
 class BookServiceTest {
 
     private BookService service;
+    private InMemorySaleRepository saleRepository;
 
     @BeforeEach
     void setUp() {
-        service = new BookService(new InMemoryBookRepository());
+        saleRepository = new InMemorySaleRepository();
+        SaleService saleService = new SaleService(saleRepository);
+        service = new BookService(new InMemoryBookRepository(), saleService);
     }
 
     @Test
@@ -53,6 +58,12 @@ class BookServiceTest {
 
         Book updated = service.findByIsbn("978-7-111").orElseThrow();
         assertEquals(7, updated.getStock());
+
+        assertEquals(1, saleRepository.count());
+        Sale sale = saleRepository.findAll().get(0);
+        assertEquals("978-7-111", sale.getIsbn());
+        assertEquals(3, sale.getQuantity());
+        assertEquals(new BigDecimal("297.00"), sale.getAmount());
     }
 
     @Test
@@ -60,6 +71,7 @@ class BookServiceTest {
         Book book = new Book("978-7-111", "Java 核心技术", "机械工业出版社", "Cay", 2, new BigDecimal("99.00"));
         service.addBook(book);
         assertThrows(IllegalStateException.class, () -> service.sellBook("978-7-111", 3));
+        assertEquals(0, saleRepository.count());
     }
 
     @Test
@@ -136,6 +148,36 @@ class BookServiceTest {
         @Override
         public long count() {
             return books.size();
+        }
+    }
+
+    private static class InMemorySaleRepository implements SaleRepository {
+
+        private final List<Sale> sales = new ArrayList<>();
+        private long nextId = 1;
+
+        @Override
+        public Sale save(Sale sale) {
+            sale.setId(nextId++);
+            sales.add(sale);
+            return sale;
+        }
+
+        @Override
+        public List<Sale> findAll() {
+            return new ArrayList<>(sales);
+        }
+
+        @Override
+        public long count() {
+            return sales.size();
+        }
+
+        @Override
+        public BigDecimal totalAmount() {
+            return sales.stream()
+                    .map(Sale::getAmount)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
         }
     }
 }
