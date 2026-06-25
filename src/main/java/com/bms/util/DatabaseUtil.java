@@ -57,10 +57,17 @@ public class DatabaseUtil {
                 "sale_time TIMESTAMP NOT NULL" +
                 ")";
 
+        String usersSql = "CREATE TABLE IF NOT EXISTS users (" +
+                "username VARCHAR(50) PRIMARY KEY, " +
+                "password VARCHAR(100) NOT NULL, " +
+                "role VARCHAR(20) NOT NULL" +
+                ")";
+
         try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
             stmt.execute(booksSql);
             stmt.execute(salesSql);
+            stmt.execute(usersSql);
         } catch (SQLException e) {
             throw new RuntimeException("初始化数据库失败", e);
         }

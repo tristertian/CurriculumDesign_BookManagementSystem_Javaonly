@@ -1,16 +1,17 @@
 package com.bms;
 
-import com.bms.repository.BookRepository;
-import com.bms.repository.JdbcBookRepository;
-import com.bms.repository.JdbcSaleRepository;
-import com.bms.repository.SaleRepository;
+import com.bms.entity.User;
+import com.bms.repository.*;
 import com.bms.service.BookService;
 import com.bms.service.SaleService;
+import com.bms.service.UserService;
+import com.bms.ui.LoginDialog;
 import com.bms.ui.MainFrame;
 import com.bms.util.DataInitializer;
 import com.bms.util.DatabaseUtil;
 
 import javax.swing.*;
+import java.util.Optional;
 
 /**
  * 图书管理系统入口。
@@ -28,6 +29,10 @@ public class App {
             return;
         }
 
+        UserRepository userRepository = new JdbcUserRepository();
+        UserService userService = new UserService(userRepository);
+        userService.initializeDefaultUsers();
+
         BookRepository bookRepository = new JdbcBookRepository();
         DataInitializer.initializeIfEmpty(bookRepository, 100);
 
@@ -36,7 +41,15 @@ public class App {
         BookService bookService = new BookService(bookRepository, saleService);
 
         SwingUtilities.invokeLater(() -> {
-            MainFrame frame = new MainFrame(bookService, saleService);
+            LoginDialog loginDialog = new LoginDialog(null, userService);
+            loginDialog.setVisible(true);
+
+            Optional<User> userOpt = loginDialog.getLoggedInUser();
+            if (userOpt.isEmpty()) {
+                System.exit(0);
+            }
+
+            MainFrame frame = new MainFrame(bookService, saleService, userOpt.get());
             frame.setVisible(true);
         });
     }
