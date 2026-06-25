@@ -7,6 +7,7 @@ import com.bms.repository.SaleRepository;
 import com.bms.service.BookService;
 import com.bms.service.SaleService;
 import com.bms.ui.MainFrame;
+import com.bms.util.DataInitializer;
 import com.bms.util.DatabaseUtil;
 
 import javax.swing.*;
@@ -28,6 +29,8 @@ public class App {
         }
 
         BookRepository bookRepository = new JdbcBookRepository();
+        DataInitializer.initializeIfEmpty(bookRepository, 100);
+
         SaleRepository saleRepository = new JdbcSaleRepository();
         SaleService saleService = new SaleService(saleRepository);
         BookService bookService = new BookService(bookRepository, saleService);
