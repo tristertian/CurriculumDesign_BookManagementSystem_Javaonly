@@ -49,6 +49,8 @@ public class SalesPanel extends JPanel {
         gbc.gridx = 1;
         inputPanel.add(quantityField, gbc);
 
+        isbnField.addActionListener(e -> queryBook());
+
         JButton queryButton = new JButton("查询");
         queryButton.addActionListener(e -> queryBook());
         gbc.gridx = 0;

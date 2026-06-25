@@ -6,7 +6,13 @@ import com.bms.service.BookService;
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
+import javax.swing.text.PlainDocument;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -61,10 +67,20 @@ public class BookManagePanel extends JPanel {
         // 表格区域
         bookTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         bookTable.setAutoCreateRowSorter(true);
+        bookTable.setDefaultRenderer(Object.class, new StockWarningRenderer());
+        bookTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         bookTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
                 if (!e.getValueIsAdjusting()) {
+                    fillFormFromSelection();
+                }
+            }
+        });
+        bookTable.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
                     fillFormFromSelection();
                 }
             }
@@ -85,6 +101,9 @@ public class BookManagePanel extends JPanel {
         formPanel.add(stockField);
         formPanel.add(new JLabel("价格:"));
         formPanel.add(priceField);
+
+        ((PlainDocument) stockField.getDocument()).setDocumentFilter(new IntegerDocumentFilter());
+        ((PlainDocument) priceField.getDocument()).setDocumentFilter(new DecimalDocumentFilter());
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
         JButton addButton = new JButton("添加");
@@ -110,6 +129,22 @@ public class BookManagePanel extends JPanel {
     private void refreshTable() {
         List<Book> books = bookService.findAllBooks();
         tableModel.setBooks(books);
+        resizeColumnWidth();
+    }
+
+    private void resizeColumnWidth() {
+        for (int column = 0; column < bookTable.getColumnCount(); column++) {
+            int width = 50;
+            for (int row = 0; row < bookTable.getRowCount(); row++) {
+                Object value = bookTable.getValueAt(row, column);
+                if (value == null) continue;
+                int preferredWidth = bookTable.getCellRenderer(row, column)
+                        .getTableCellRendererComponent(bookTable, value, false, false, row, column)
+                        .getPreferredSize().width;
+                width = Math.max(width, preferredWidth + 20);
+            }
+            bookTable.getColumnModel().getColumn(column).setPreferredWidth(width);
+        }
     }
 
     private void searchBooks() {
@@ -124,6 +159,7 @@ public class BookManagePanel extends JPanel {
             default -> result = bookService.findAllBooks();
         }
         tableModel.setBooks(result);
+        resizeColumnWidth();
         if (result.isEmpty()) {
             JOptionPane.showMessageDialog(this, "该标题不存在！", "提示", JOptionPane.INFORMATION_MESSAGE);
         }
@@ -227,5 +263,49 @@ public class BookManagePanel extends JPanel {
         stockField.setText("");
         priceField.setText("");
         bookTable.clearSelection();
+    }
+
+    /**
+     * 整数输入过滤器。
+     */
+    private static class IntegerDocumentFilter extends DocumentFilter {
+        @Override
+        public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr) throws BadLocationException {
+            if (string == null || string.matches("[0-9]*")) {
+                super.insertString(fb, offset, string, attr);
+            }
+        }
+
+        @Override
+        public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
+            if (text == null || text.matches("[0-9]*")) {
+                super.replace(fb, offset, length, text, attrs);
+            }
+        }
+    }
+
+    /**
+     * 小数输入过滤器。
+     */
+    private static class DecimalDocumentFilter extends DocumentFilter {
+        @Override
+        public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr) throws BadLocationException {
+            if (string == null || isValidDecimal(fb.getDocument().getText(0, fb.getDocument().getLength()) + string)) {
+                super.insertString(fb, offset, string, attr);
+            }
+        }
+
+        @Override
+        public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
+            String current = fb.getDocument().getText(0, fb.getDocument().getLength());
+            String updated = current.substring(0, offset) + text + current.substring(offset + length);
+            if (text == null || isValidDecimal(updated)) {
+                super.replace(fb, offset, length, text, attrs);
+            }
+        }
+
+        private boolean isValidDecimal(String text) {
+            return text.matches("[0-9]*\\.?[0-9]*");
+        }
     }
 }
