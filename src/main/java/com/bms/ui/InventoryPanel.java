@@ -1,13 +1,7 @@
 package com.bms.ui;
 
 import com.bms.entity.Book;
-import com.bms.entity.User;
 import com.bms.service.BookService;
-
-import com.opencsv.CSVReader;
-import com.opencsv.CSVWriter;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -19,23 +13,21 @@ import javax.swing.text.PlainDocument;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.*;
 import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 图书管理面板。
+ * 库存管理面板：添加、修改、删除、多条件搜索、书籍列表展示。
  */
-public class BookManagePanel extends JPanel {
+public class InventoryPanel extends JPanel {
 
     private final BookService bookService;
-    private final User user;
 
     private final BookTableModel tableModel = new BookTableModel();
     private final JTable bookTable = new JTable(tableModel);
 
     private final JComboBox<String> searchFieldCombo = new JComboBox<>(new String[]{"书名", "ISBN", "作者", "出版社"});
-    private final JTextField searchInput = new JTextField(20);
+    private final JTextField searchInput = new JTextField(18);
 
     private final JTextField isbnField = new JTextField();
     private final JTextField titleField = new JTextField();
@@ -44,20 +36,20 @@ public class BookManagePanel extends JPanel {
     private final JTextField stockField = new JTextField();
     private final JTextField priceField = new JTextField();
 
-    public BookManagePanel(BookService bookService, User user) {
+    public InventoryPanel(BookService bookService) {
         this.bookService = bookService;
-        this.user = user;
         initUI();
         refreshTable();
     }
 
     private void initUI() {
         setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
 
-        // 搜索区域
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        searchPanel.add(new JLabel("查询字段:"));
+        // 搜索区
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        searchPanel.setBorder(BorderFactory.createTitledBorder("搜索定位"));
+        searchPanel.add(new JLabel("搜索字段:"));
         searchPanel.add(searchFieldCombo);
         searchPanel.add(new JLabel("关键字:"));
         searchPanel.add(searchInput);
@@ -73,7 +65,7 @@ public class BookManagePanel extends JPanel {
 
         add(searchPanel, BorderLayout.NORTH);
 
-        // 表格区域
+        // 表格区
         bookTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         bookTable.setAutoCreateRowSorter(true);
         bookTable.setDefaultRenderer(Object.class, new StockWarningRenderer());
@@ -96,7 +88,10 @@ public class BookManagePanel extends JPanel {
         });
         add(new JScrollPane(bookTable), BorderLayout.CENTER);
 
-        // 表单区域
+        // 表单与操作区
+        JPanel southPanel = new JPanel(new BorderLayout(5, 5));
+        southPanel.setBorder(BorderFactory.createTitledBorder("图书信息"));
+
         JPanel formPanel = new JPanel(new GridLayout(3, 4, 5, 5));
         formPanel.add(new JLabel("ISBN:"));
         formPanel.add(isbnField);
@@ -121,52 +116,23 @@ public class BookManagePanel extends JPanel {
         updateButton.addActionListener(e -> updateBook());
         JButton deleteButton = new JButton("删除");
         deleteButton.addActionListener(e -> deleteBook());
-        JButton importButton = new JButton("导入");
-        importButton.addActionListener(e -> importBooks());
-        JButton exportButton = new JButton("导出");
-        exportButton.addActionListener(e -> exportBooks());
         JButton clearButton = new JButton("清空");
         clearButton.addActionListener(e -> clearForm());
-
-        boolean admin = user.isAdmin();
-        addButton.setEnabled(admin);
-        updateButton.setEnabled(admin);
-        deleteButton.setEnabled(admin);
-        importButton.setEnabled(admin);
-        exportButton.setEnabled(admin);
 
         buttonPanel.add(addButton);
         buttonPanel.add(updateButton);
         buttonPanel.add(deleteButton);
-        buttonPanel.add(importButton);
-        buttonPanel.add(exportButton);
         buttonPanel.add(clearButton);
 
-        JPanel southPanel = new JPanel(new BorderLayout(5, 5));
         southPanel.add(formPanel, BorderLayout.CENTER);
         southPanel.add(buttonPanel, BorderLayout.SOUTH);
         add(southPanel, BorderLayout.SOUTH);
     }
 
-    private void refreshTable() {
+    public void refreshTable() {
         List<Book> books = bookService.findAllBooks();
         tableModel.setBooks(books);
         resizeColumnWidth();
-    }
-
-    private void resizeColumnWidth() {
-        for (int column = 0; column < bookTable.getColumnCount(); column++) {
-            int width = 50;
-            for (int row = 0; row < bookTable.getRowCount(); row++) {
-                Object value = bookTable.getValueAt(row, column);
-                if (value == null) continue;
-                int preferredWidth = bookTable.getCellRenderer(row, column)
-                        .getTableCellRendererComponent(bookTable, value, false, false, row, column)
-                        .getPreferredSize().width;
-                width = Math.max(width, preferredWidth + 20);
-            }
-            bookTable.getColumnModel().getColumn(column).setPreferredWidth(width);
-        }
     }
 
     private void searchBooks() {
@@ -183,7 +149,7 @@ public class BookManagePanel extends JPanel {
         tableModel.setBooks(result);
         resizeColumnWidth();
         if (result.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "该标题不存在！", "提示", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "未找到匹配记录", "提示", JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
@@ -287,157 +253,21 @@ public class BookManagePanel extends JPanel {
         bookTable.clearSelection();
     }
 
-    private void importBooks() {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Excel/CSV files", "xlsx", "csv"));
-        int result = chooser.showOpenDialog(this);
-        if (result != JFileChooser.APPROVE_OPTION) {
-            return;
-        }
-
-        File file = chooser.getSelectedFile();
-        String name = file.getName().toLowerCase();
-        try {
-            List<Book> books;
-            if (name.endsWith(".xlsx")) {
-                books = readExcel(file);
-            } else if (name.endsWith(".csv")) {
-                books = readCsv(file);
-            } else {
-                JOptionPane.showMessageDialog(this, "不支持的文件格式", "错误", JOptionPane.ERROR_MESSAGE);
-                return;
+    private void resizeColumnWidth() {
+        for (int column = 0; column < bookTable.getColumnCount(); column++) {
+            int width = 80;
+            for (int row = 0; row < bookTable.getRowCount(); row++) {
+                Object value = bookTable.getValueAt(row, column);
+                if (value == null) continue;
+                int preferredWidth = bookTable.getCellRenderer(row, column)
+                        .getTableCellRendererComponent(bookTable, value, false, false, row, column)
+                        .getPreferredSize().width;
+                width = Math.max(width, preferredWidth + 20);
             }
-
-            int success = 0;
-            int failed = 0;
-            for (Book book : books) {
-                try {
-                    bookService.addBook(book);
-                    success++;
-                } catch (IllegalArgumentException e) {
-                    failed++;
-                }
-            }
-            refreshTable();
-            JOptionPane.showMessageDialog(this,
-                    "导入完成：成功 " + success + " 条，失败 " + failed + " 条",
-                    "提示",
-                    JOptionPane.INFORMATION_MESSAGE);
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "导入失败: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
+            bookTable.getColumnModel().getColumn(column).setPreferredWidth(width);
         }
     }
 
-    private List<Book> readExcel(File file) throws IOException {
-        List<Book> books = new java.util.ArrayList<>();
-        try (InputStream is = new FileInputStream(file);
-             Workbook workbook = new XSSFWorkbook(is)) {
-            Sheet sheet = workbook.getSheetAt(0);
-            for (Row row : sheet) {
-                if (row.getRowNum() == 0) continue;
-                Book book = parseBookRow(
-                        getCellString(row.getCell(0)),
-                        getCellString(row.getCell(1)),
-                        getCellString(row.getCell(2)),
-                        getCellString(row.getCell(3)),
-                        getCellString(row.getCell(4)),
-                        getCellString(row.getCell(5))
-                );
-                if (book != null) {
-                    books.add(book);
-                }
-            }
-        }
-        return books;
-    }
-
-    private List<Book> readCsv(File file) throws Exception {
-        List<Book> books = new java.util.ArrayList<>();
-        try (CSVReader reader = new CSVReader(new FileReader(file))) {
-            String[] line;
-            boolean first = true;
-            while ((line = reader.readNext()) != null) {
-                if (first) {
-                    first = false;
-                    continue;
-                }
-                if (line.length < 6) continue;
-                Book book = parseBookRow(line[0], line[1], line[2], line[3], line[4], line[5]);
-                if (book != null) {
-                    books.add(book);
-                }
-            }
-        }
-        return books;
-    }
-
-    private Book parseBookRow(String isbn, String title, String publisher, String author, String stockText, String priceText) {
-        if (isbn == null || isbn.isBlank() || title == null || title.isBlank()) {
-            return null;
-        }
-        try {
-            int stock = Integer.parseInt(stockText.trim());
-            BigDecimal price = new BigDecimal(priceText.trim());
-            return new Book(isbn.trim(), title.trim(), publisher != null ? publisher.trim() : "",
-                    author != null ? author.trim() : "", stock, price);
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-
-    private String getCellString(Cell cell) {
-        if (cell == null) return "";
-        return switch (cell.getCellType()) {
-            case STRING -> cell.getStringCellValue();
-            case NUMERIC -> String.valueOf((int) cell.getNumericCellValue());
-            default -> "";
-        };
-    }
-
-    private void exportBooks() {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter("Excel (*.xlsx)", "xlsx"));
-        int result = chooser.showSaveDialog(this);
-        if (result != JFileChooser.APPROVE_OPTION) {
-            return;
-        }
-
-        File file = chooser.getSelectedFile();
-        if (!file.getName().toLowerCase().endsWith(".xlsx")) {
-            file = new File(file.getAbsolutePath() + ".xlsx");
-        }
-
-        try (Workbook workbook = new XSSFWorkbook();
-             FileOutputStream fos = new FileOutputStream(file)) {
-            Sheet sheet = workbook.createSheet("图书");
-            Row header = sheet.createRow(0);
-            String[] columns = {"ISBN", "书名", "出版社", "作者", "库存", "价格"};
-            for (int i = 0; i < columns.length; i++) {
-                header.createCell(i).setCellValue(columns[i]);
-            }
-
-            List<Book> books = tableModel.getBooks();
-            int rowNum = 1;
-            for (Book book : books) {
-                Row row = sheet.createRow(rowNum++);
-                row.createCell(0).setCellValue(book.getIsbn());
-                row.createCell(1).setCellValue(book.getTitle());
-                row.createCell(2).setCellValue(book.getPublisher());
-                row.createCell(3).setCellValue(book.getAuthor());
-                row.createCell(4).setCellValue(book.getStock());
-                row.createCell(5).setCellValue(book.getPrice().doubleValue());
-            }
-
-            workbook.write(fos);
-            JOptionPane.showMessageDialog(this, "导出成功", "提示", JOptionPane.INFORMATION_MESSAGE);
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "导出失败: " + e.getMessage(), "错误", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    /**
-     * 整数输入过滤器。
-     */
     private static class IntegerDocumentFilter extends DocumentFilter {
         @Override
         public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr) throws BadLocationException {
@@ -454,9 +284,6 @@ public class BookManagePanel extends JPanel {
         }
     }
 
-    /**
-     * 小数输入过滤器。
-     */
     private static class DecimalDocumentFilter extends DocumentFilter {
         @Override
         public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr) throws BadLocationException {
