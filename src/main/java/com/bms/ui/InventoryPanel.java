@@ -4,6 +4,7 @@ import com.bms.entity.Book;
 import com.bms.service.BookService;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.text.AttributeSet;
@@ -17,7 +18,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 库存管理面板：添加、修改、删除、多条件搜索、书籍列表展示。
+ * 库存管理面板：添加、修改、删除、多条件搜索定位、书籍列表展示。
  */
 public class InventoryPanel extends JPanel {
 
@@ -36,6 +37,9 @@ public class InventoryPanel extends JPanel {
     private final JTextField stockField = new JTextField();
     private final JTextField priceField = new JTextField();
 
+    private static final Color PRIMARY_COLOR = new Color(41, 128, 185);
+    private static final Color DANGER_COLOR = new Color(231, 76, 60);
+
     public InventoryPanel(BookService bookService) {
         this.bookService = bookService;
         initUI();
@@ -43,33 +47,57 @@ public class InventoryPanel extends JPanel {
     }
 
     private void initUI() {
-        setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        setLayout(new BorderLayout(15, 15));
+        setBackground(Color.WHITE);
+        setBorder(new EmptyBorder(20, 20, 20, 20));
+
+        // 标题
+        JLabel titleLabel = new JLabel("库存管理");
+        titleLabel.setFont(new Font("Microsoft YaHei", Font.BOLD, 18));
+        titleLabel.setForeground(new Color(50, 50, 50));
 
         // 搜索区
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        searchPanel.setBorder(BorderFactory.createTitledBorder("搜索定位"));
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
+        searchPanel.setBackground(Color.WHITE);
+        searchPanel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(220, 220, 220)), "搜索定位"));
         searchPanel.add(new JLabel("搜索字段:"));
         searchPanel.add(searchFieldCombo);
         searchPanel.add(new JLabel("关键字:"));
         searchPanel.add(searchInput);
+
         JButton searchButton = new JButton("查询");
+        stylePrimaryButton(searchButton);
         searchButton.addActionListener(e -> searchBooks());
         searchPanel.add(searchButton);
+
         JButton resetButton = new JButton("重置");
+        styleSecondaryButton(resetButton);
         resetButton.addActionListener(e -> {
             searchInput.setText("");
             refreshTable();
         });
         searchPanel.add(resetButton);
 
-        add(searchPanel, BorderLayout.NORTH);
+        JPanel topPanel = new JPanel(new BorderLayout(10, 10));
+        topPanel.setBackground(Color.WHITE);
+        topPanel.add(titleLabel, BorderLayout.NORTH);
+        topPanel.add(searchPanel, BorderLayout.CENTER);
+
+        add(topPanel, BorderLayout.NORTH);
 
         // 表格区
         bookTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         bookTable.setAutoCreateRowSorter(true);
         bookTable.setDefaultRenderer(Object.class, new StockWarningRenderer());
         bookTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        bookTable.setRowHeight(28);
+        bookTable.setFont(new Font("Microsoft YaHei", Font.PLAIN, 12));
+        bookTable.getTableHeader().setFont(new Font("Microsoft YaHei", Font.BOLD, 12));
+        bookTable.getTableHeader().setBackground(PRIMARY_COLOR);
+        bookTable.getTableHeader().setForeground(Color.WHITE);
+        bookTable.getTableHeader().setPreferredSize(new Dimension(0, 32));
+        bookTable.setGridColor(new Color(230, 230, 230));
         bookTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
@@ -86,37 +114,63 @@ public class InventoryPanel extends JPanel {
                 }
             }
         });
-        add(new JScrollPane(bookTable), BorderLayout.CENTER);
+
+        JPanel tablePanel = new JPanel(new BorderLayout());
+        tablePanel.setBackground(Color.WHITE);
+        tablePanel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(220, 220, 220)), "书籍列表"));
+        tablePanel.add(new JScrollPane(bookTable), BorderLayout.CENTER);
+
+        add(tablePanel, BorderLayout.CENTER);
 
         // 表单与操作区
-        JPanel southPanel = new JPanel(new BorderLayout(5, 5));
-        southPanel.setBorder(BorderFactory.createTitledBorder("图书信息"));
+        JPanel southPanel = new JPanel(new BorderLayout(10, 10));
+        southPanel.setBackground(Color.WHITE);
+        southPanel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(220, 220, 220)), "图书信息"));
 
-        JPanel formPanel = new JPanel(new GridLayout(3, 4, 5, 5));
-        formPanel.add(new JLabel("ISBN:"));
+        JPanel formPanel = new JPanel(new GridLayout(3, 4, 12, 12));
+        formPanel.setBackground(Color.WHITE);
+        formPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        styleFormLabel("ISBN", formPanel);
         formPanel.add(isbnField);
-        formPanel.add(new JLabel("书名:"));
+        styleFormLabel("书名", formPanel);
         formPanel.add(titleField);
-        formPanel.add(new JLabel("出版社:"));
+        styleFormLabel("出版社", formPanel);
         formPanel.add(publisherField);
-        formPanel.add(new JLabel("作者:"));
+        styleFormLabel("作者", formPanel);
         formPanel.add(authorField);
-        formPanel.add(new JLabel("库存:"));
+        styleFormLabel("库存", formPanel);
         formPanel.add(stockField);
-        formPanel.add(new JLabel("价格:"));
+        styleFormLabel("价格", formPanel);
         formPanel.add(priceField);
+
+        styleTextField(isbnField);
+        styleTextField(titleField);
+        styleTextField(publisherField);
+        styleTextField(authorField);
+        styleTextField(stockField);
+        styleTextField(priceField);
 
         ((PlainDocument) stockField.getDocument()).setDocumentFilter(new IntegerDocumentFilter());
         ((PlainDocument) priceField.getDocument()).setDocumentFilter(new DecimalDocumentFilter());
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 5));
+        buttonPanel.setBackground(Color.WHITE);
         JButton addButton = new JButton("添加");
+        stylePrimaryButton(addButton);
         addButton.addActionListener(e -> addBook());
+
         JButton updateButton = new JButton("修改");
+        stylePrimaryButton(updateButton);
         updateButton.addActionListener(e -> updateBook());
+
         JButton deleteButton = new JButton("删除");
+        styleDangerButton(deleteButton);
         deleteButton.addActionListener(e -> deleteBook());
+
         JButton clearButton = new JButton("清空");
+        styleSecondaryButton(clearButton);
         clearButton.addActionListener(e -> clearForm());
 
         buttonPanel.add(addButton);
@@ -127,6 +181,48 @@ public class InventoryPanel extends JPanel {
         southPanel.add(formPanel, BorderLayout.CENTER);
         southPanel.add(buttonPanel, BorderLayout.SOUTH);
         add(southPanel, BorderLayout.SOUTH);
+    }
+
+    private void styleFormLabel(String text, JPanel panel) {
+        JLabel label = new JLabel(text + ":");
+        label.setFont(new Font("Microsoft YaHei", Font.PLAIN, 13));
+        label.setForeground(new Color(60, 60, 60));
+        panel.add(label);
+    }
+
+    private void styleTextField(JTextField field) {
+        field.setFont(new Font("Microsoft YaHei", Font.PLAIN, 12));
+        field.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(200, 200, 200)),
+                new EmptyBorder(4, 6, 4, 6)
+        ));
+    }
+
+    private void stylePrimaryButton(JButton button) {
+        button.setFont(new Font("Microsoft YaHei", Font.PLAIN, 12));
+        button.setForeground(Color.WHITE);
+        button.setBackground(PRIMARY_COLOR);
+        button.setFocusPainted(false);
+        button.setBorder(new EmptyBorder(6, 16, 6, 16));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    }
+
+    private void styleSecondaryButton(JButton button) {
+        button.setFont(new Font("Microsoft YaHei", Font.PLAIN, 12));
+        button.setForeground(new Color(80, 80, 80));
+        button.setBackground(new Color(220, 220, 220));
+        button.setFocusPainted(false);
+        button.setBorder(new EmptyBorder(6, 16, 6, 16));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    }
+
+    private void styleDangerButton(JButton button) {
+        button.setFont(new Font("Microsoft YaHei", Font.PLAIN, 12));
+        button.setForeground(Color.WHITE);
+        button.setBackground(DANGER_COLOR);
+        button.setFocusPainted(false);
+        button.setBorder(new EmptyBorder(6, 16, 6, 16));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
     }
 
     public void refreshTable() {

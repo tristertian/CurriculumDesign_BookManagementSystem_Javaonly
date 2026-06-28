@@ -2,20 +2,24 @@ package com.bms.ui;
 
 import com.bms.entity.Book;
 import com.bms.service.BookService;
+import com.opencsv.CSVReader;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import com.opencsv.CSVReader;
-
 import java.awt.*;
 import java.io.*;
 import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 数据概览面板：查询、统计排序、导入导出、书籍列表展示。
+ * 数据概览面板：查询、导入导出、书籍列表展示。
  */
 public class DataOverviewPanel extends JPanel {
 
@@ -27,11 +31,10 @@ public class DataOverviewPanel extends JPanel {
     private final JComboBox<String> searchFieldCombo = new JComboBox<>(new String[]{"书名", "ISBN", "作者", "出版社"});
     private final JTextField searchInput = new JTextField(18);
 
-    private final JComboBox<String> sortFieldCombo = new JComboBox<>(new String[]{"价格", "库存量", "作者", "出版社"});
-    private final JComboBox<String> sortOrderCombo = new JComboBox<>(new String[]{"降序", "升序"});
-
     private final JLabel totalLabel = new JLabel("图书总数: 0");
     private final JLabel shownLabel = new JLabel("当前展示: 0");
+
+    private static final Color PRIMARY_COLOR = new Color(41, 128, 185);
 
     public DataOverviewPanel(BookService bookService) {
         this.bookService = bookService;
@@ -40,47 +43,52 @@ public class DataOverviewPanel extends JPanel {
     }
 
     private void initUI() {
-        setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        setLayout(new BorderLayout(15, 15));
+        setBackground(Color.WHITE);
+        setBorder(new EmptyBorder(20, 20, 20, 20));
+
+        // 标题
+        JLabel titleLabel = new JLabel("数据概览");
+        titleLabel.setFont(new Font("Microsoft YaHei", Font.BOLD, 18));
+        titleLabel.setForeground(new Color(50, 50, 50));
 
         // 查询区
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        searchPanel.setBorder(BorderFactory.createTitledBorder("查询"));
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
+        searchPanel.setBackground(Color.WHITE);
+        searchPanel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(220, 220, 220)), "查询"));
         searchPanel.add(new JLabel("查询字段:"));
         searchPanel.add(searchFieldCombo);
         searchPanel.add(new JLabel("关键字:"));
         searchPanel.add(searchInput);
+
         JButton searchButton = new JButton("查询");
+        stylePrimaryButton(searchButton);
         searchButton.addActionListener(e -> searchBooks());
         searchPanel.add(searchButton);
+
         JButton resetButton = new JButton("重置");
+        styleSecondaryButton(resetButton);
         resetButton.addActionListener(e -> {
             searchInput.setText("");
             refreshTable();
         });
         searchPanel.add(resetButton);
 
-        // 统计排序区
-        JPanel sortPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        sortPanel.setBorder(BorderFactory.createTitledBorder("统计排序"));
-        sortPanel.add(new JLabel("排序字段:"));
-        sortPanel.add(sortFieldCombo);
-        sortPanel.add(new JLabel("排序方式:"));
-        sortPanel.add(sortOrderCombo);
-        JButton sortButton = new JButton("统计");
-        sortButton.addActionListener(e -> sortBooks());
-        sortPanel.add(sortButton);
+        // 顶部组合
+        JPanel topPanel = new JPanel(new BorderLayout(10, 10));
+        topPanel.setBackground(Color.WHITE);
+        topPanel.add(titleLabel, BorderLayout.NORTH);
+        topPanel.add(searchPanel, BorderLayout.CENTER);
 
         // 信息区
-        JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 5));
+        JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 25, 5));
+        infoPanel.setBackground(Color.WHITE);
+        styleInfoLabel(totalLabel);
+        styleInfoLabel(shownLabel);
         infoPanel.add(totalLabel);
         infoPanel.add(shownLabel);
-
-        // 顶部组合
-        JPanel topPanel = new JPanel(new GridLayout(3, 1, 5, 5));
-        topPanel.add(searchPanel);
-        topPanel.add(sortPanel);
-        topPanel.add(infoPanel);
+        topPanel.add(infoPanel, BorderLayout.SOUTH);
 
         add(topPanel, BorderLayout.NORTH);
 
@@ -89,18 +97,69 @@ public class DataOverviewPanel extends JPanel {
         bookTable.setAutoCreateRowSorter(true);
         bookTable.setDefaultRenderer(Object.class, new StockWarningRenderer());
         bookTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-        add(new JScrollPane(bookTable), BorderLayout.CENTER);
+        bookTable.setRowHeight(28);
+        bookTable.setFont(new Font("Microsoft YaHei", Font.PLAIN, 12));
+        bookTable.getTableHeader().setFont(new Font("Microsoft YaHei", Font.BOLD, 12));
+        bookTable.getTableHeader().setBackground(PRIMARY_COLOR);
+        bookTable.getTableHeader().setForeground(Color.WHITE);
+        bookTable.getTableHeader().setPreferredSize(new Dimension(0, 32));
+        bookTable.setGridColor(new Color(230, 230, 230));
+
+        JPanel tablePanel = new JPanel(new BorderLayout());
+        tablePanel.setBackground(Color.WHITE);
+        tablePanel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(220, 220, 220)), "书籍列表"));
+        tablePanel.add(new JScrollPane(bookTable), BorderLayout.CENTER);
+
+        add(tablePanel, BorderLayout.CENTER);
 
         // 操作区
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 5));
+        buttonPanel.setBackground(Color.WHITE);
         JButton importButton = new JButton("导入 Excel/CSV");
+        stylePrimaryButton(importButton);
         importButton.addActionListener(e -> importBooks());
+
         JButton exportButton = new JButton("导出 Excel");
+        styleSuccessButton(exportButton);
         exportButton.addActionListener(e -> exportBooks());
+
         buttonPanel.add(importButton);
         buttonPanel.add(exportButton);
 
         add(buttonPanel, BorderLayout.SOUTH);
+    }
+
+    private void stylePrimaryButton(JButton button) {
+        button.setFont(new Font("Microsoft YaHei", Font.PLAIN, 12));
+        button.setForeground(Color.WHITE);
+        button.setBackground(PRIMARY_COLOR);
+        button.setFocusPainted(false);
+        button.setBorder(new EmptyBorder(6, 16, 6, 16));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    }
+
+    private void styleSecondaryButton(JButton button) {
+        button.setFont(new Font("Microsoft YaHei", Font.PLAIN, 12));
+        button.setForeground(new Color(80, 80, 80));
+        button.setBackground(new Color(220, 220, 220));
+        button.setFocusPainted(false);
+        button.setBorder(new EmptyBorder(6, 16, 6, 16));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    }
+
+    private void styleSuccessButton(JButton button) {
+        button.setFont(new Font("Microsoft YaHei", Font.PLAIN, 12));
+        button.setForeground(Color.WHITE);
+        button.setBackground(new Color(39, 174, 96));
+        button.setFocusPainted(false);
+        button.setBorder(new EmptyBorder(6, 16, 6, 16));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+    }
+
+    private void styleInfoLabel(JLabel label) {
+        label.setFont(new Font("Microsoft YaHei", Font.PLAIN, 13));
+        label.setForeground(new Color(80, 80, 80));
     }
 
     public void refreshTable() {
@@ -128,25 +187,6 @@ public class DataOverviewPanel extends JPanel {
         if (result.isEmpty()) {
             JOptionPane.showMessageDialog(this, "未找到匹配记录", "提示", JOptionPane.INFORMATION_MESSAGE);
         }
-    }
-
-    private void sortBooks() {
-        String field = (String) sortFieldCombo.getSelectedItem();
-        String order = (String) sortOrderCombo.getSelectedItem();
-
-        String sortField = switch (field) {
-            case "价格" -> "price";
-            case "库存量" -> "stock";
-            case "作者" -> "author";
-            case "出版社" -> "publisher";
-            default -> "price";
-        };
-        boolean ascending = "升序".equals(order);
-
-        List<Book> books = bookService.listBooksSorted(sortField, ascending);
-        tableModel.setBooks(books);
-        shownLabel.setText("当前展示: " + books.size());
-        resizeColumnWidth();
     }
 
     private void resizeColumnWidth() {

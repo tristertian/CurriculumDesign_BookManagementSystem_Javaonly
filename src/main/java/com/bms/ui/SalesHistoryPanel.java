@@ -4,6 +4,7 @@ import com.bms.entity.Sale;
 import com.bms.service.SaleService;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
 import java.math.BigDecimal;
@@ -17,12 +18,15 @@ import java.util.List;
 public class SalesHistoryPanel extends JPanel {
 
     private final SaleService saleService;
+
     private final SaleTableModel tableModel = new SaleTableModel();
     private final JTable saleTable = new JTable(tableModel);
 
-    private final JLabel countLabel = new JLabel("销售笔数: 0");
-    private final JLabel amountLabel = new JLabel("销售总额: 0.00");
+    private final JLabel countLabel = new JLabel("0");
+    private final JLabel amountLabel = new JLabel("¥0.00");
 
+    private static final Color PRIMARY_COLOR = new Color(41, 128, 185);
+    private static final Color SUCCESS_COLOR = new Color(39, 174, 96);
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public SalesHistoryPanel(SaleService saleService) {
@@ -32,28 +36,106 @@ public class SalesHistoryPanel extends JPanel {
     }
 
     private void initUI() {
-        setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        setLayout(new BorderLayout(15, 15));
+        setBackground(Color.WHITE);
+        setBorder(new EmptyBorder(20, 20, 20, 20));
 
-        JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        infoPanel.add(countLabel);
-        infoPanel.add(Box.createHorizontalStrut(20));
-        infoPanel.add(amountLabel);
+        // 标题
+        JLabel titleLabel = new JLabel("销售记录");
+        titleLabel.setFont(new Font("Microsoft YaHei", Font.BOLD, 18));
+        titleLabel.setForeground(new Color(50, 50, 50));
+
+        // KPI 卡片区
+        JPanel kpiPanel = new JPanel(new GridLayout(1, 3, 15, 0));
+        kpiPanel.setBackground(Color.WHITE);
+        kpiPanel.add(createKpiCard("销售笔数", countLabel, PRIMARY_COLOR));
+        kpiPanel.add(createKpiCard("销售总额", amountLabel, SUCCESS_COLOR));
 
         JButton refreshButton = new JButton("刷新");
+        stylePrimaryButton(refreshButton);
         refreshButton.addActionListener(e -> refreshSales());
-        infoPanel.add(Box.createHorizontalStrut(20));
-        infoPanel.add(refreshButton);
+        JPanel refreshPanel = new JPanel(new BorderLayout());
+        refreshPanel.setBackground(Color.WHITE);
+        refreshPanel.add(refreshButton, BorderLayout.SOUTH);
+        kpiPanel.add(refreshPanel);
 
-        add(infoPanel, BorderLayout.NORTH);
-        add(new JScrollPane(saleTable), BorderLayout.CENTER);
+        // 表格区
+        saleTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        saleTable.setAutoCreateRowSorter(true);
+        saleTable.setRowHeight(28);
+        saleTable.setFont(new Font("Microsoft YaHei", Font.PLAIN, 12));
+        saleTable.getTableHeader().setFont(new Font("Microsoft YaHei", Font.BOLD, 12));
+        saleTable.getTableHeader().setBackground(PRIMARY_COLOR);
+        saleTable.getTableHeader().setForeground(Color.WHITE);
+        saleTable.getTableHeader().setPreferredSize(new Dimension(0, 32));
+        saleTable.setGridColor(new Color(230, 230, 230));
+
+        JPanel tablePanel = new JPanel(new BorderLayout());
+        tablePanel.setBackground(Color.WHITE);
+        tablePanel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(220, 220, 220)), "销售明细"));
+        tablePanel.add(new JScrollPane(saleTable), BorderLayout.CENTER);
+
+        // 组合
+        JPanel topPanel = new JPanel(new BorderLayout(15, 15));
+        topPanel.setBackground(Color.WHITE);
+        topPanel.add(titleLabel, BorderLayout.NORTH);
+        topPanel.add(kpiPanel, BorderLayout.CENTER);
+
+        add(topPanel, BorderLayout.NORTH);
+        add(tablePanel, BorderLayout.CENTER);
+    }
+
+    private JPanel createKpiCard(String title, JLabel valueLabel, Color accentColor) {
+        JPanel card = new JPanel(new BorderLayout());
+        card.setBackground(Color.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(220, 220, 220)),
+                new EmptyBorder(15, 20, 15, 20)
+        ));
+
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(new Font("Microsoft YaHei", Font.PLAIN, 13));
+        titleLabel.setForeground(new Color(100, 100, 100));
+
+        valueLabel.setFont(new Font("Microsoft YaHei", Font.BOLD, 24));
+        valueLabel.setForeground(accentColor);
+
+        card.add(titleLabel, BorderLayout.NORTH);
+        card.add(valueLabel, BorderLayout.CENTER);
+        return card;
+    }
+
+    private void stylePrimaryButton(JButton button) {
+        button.setFont(new Font("Microsoft YaHei", Font.PLAIN, 12));
+        button.setForeground(Color.WHITE);
+        button.setBackground(PRIMARY_COLOR);
+        button.setFocusPainted(false);
+        button.setBorder(new EmptyBorder(6, 18, 6, 18));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
     }
 
     public void refreshSales() {
         List<Sale> sales = saleService.findAllSales();
         tableModel.setSales(sales);
-        countLabel.setText("销售笔数: " + saleService.getSaleCount());
-        amountLabel.setText("销售总额: " + saleService.getTotalAmount());
+        countLabel.setText(String.valueOf(saleService.getSaleCount()));
+        amountLabel.setText("¥" + saleService.getTotalAmount());
+        resizeColumnWidth();
+    }
+
+    private void resizeColumnWidth() {
+        for (int column = 0; column < saleTable.getColumnCount(); column++) {
+            int width = 80;
+            for (int row = 0; row < saleTable.getRowCount(); row++) {
+                Object value = saleTable.getValueAt(row, column);
+                if (value == null) continue;
+                int preferredWidth = saleTable.getCellRenderer(row, column)
+                        .getTableCellRendererComponent(saleTable, value, false, false, row, column)
+                        .getPreferredSize().width;
+                width = Math.max(width, preferredWidth + 20);
+            }
+            saleTable.getColumnModel().getColumn(column).setPreferredWidth(width);
+        }
     }
 
     private static class SaleTableModel extends AbstractTableModel {

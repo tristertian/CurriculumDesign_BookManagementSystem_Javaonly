@@ -21,6 +21,11 @@ public class MainFrame extends JFrame {
     private final DefaultListModel<String> navModel = new DefaultListModel<>();
     private final JList<String> navList = new JList<>(navModel);
 
+    private static final Color PRIMARY_COLOR = new Color(41, 128, 185);
+    private static final Color PRIMARY_DARK = new Color(31, 97, 141);
+    private static final Color NAV_BG = new Color(245, 245, 245);
+    private static final Color NAV_HOVER = new Color(230, 230, 230);
+
     public MainFrame(BookService bookService, SaleService saleService, User user) {
         this.bookService = bookService;
         this.saleService = saleService;
@@ -31,21 +36,21 @@ public class MainFrame extends JFrame {
     private void initUI() {
         setTitle("图书管理系统");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1000, 700);
+        setSize(1100, 720);
         setLocationRelativeTo(null);
-
         setLayout(new BorderLayout());
 
         // 顶部状态栏
         JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setBorder(new EmptyBorder(10, 15, 10, 15));
-        headerPanel.setBackground(new Color(41, 128, 185));
+        headerPanel.setBackground(PRIMARY_COLOR);
+        headerPanel.setBorder(new EmptyBorder(12, 20, 12, 20));
 
         JLabel titleLabel = new JLabel("图书管理系统");
         titleLabel.setFont(new Font("Microsoft YaHei", Font.BOLD, 18));
         titleLabel.setForeground(Color.WHITE);
 
-        JLabel userLabel = new JLabel("当前用户: " + user.getUsername() + " (" + (user.isAdmin() ? "管理员" : "店员") + ")");
+        JLabel userLabel = new JLabel("当前用户: " + user.getUsername() + " / " + (user.isAdmin() ? "管理员" : "店员"));
+        userLabel.setFont(new Font("Microsoft YaHei", Font.PLAIN, 13));
         userLabel.setForeground(Color.WHITE);
 
         headerPanel.add(titleLabel, BorderLayout.WEST);
@@ -54,10 +59,10 @@ public class MainFrame extends JFrame {
 
         // 左侧导航栏
         navList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        navList.setFixedCellHeight(45);
+        navList.setFixedCellHeight(48);
         navList.setFont(new Font("Microsoft YaHei", Font.PLAIN, 14));
         navList.setBorder(new EmptyBorder(10, 0, 10, 0));
-        navList.setBackground(new Color(245, 245, 245));
+        navList.setBackground(NAV_BG);
         navList.setCellRenderer(new NavCellRenderer());
 
         JScrollPane navScrollPane = new JScrollPane(navList);
@@ -66,7 +71,7 @@ public class MainFrame extends JFrame {
         add(navScrollPane, BorderLayout.WEST);
 
         // 右侧内容区
-        contentPanel.setBorder(new EmptyBorder(0, 0, 0, 0));
+        contentPanel.setBackground(Color.WHITE);
         add(contentPanel, BorderLayout.CENTER);
 
         setupPanels();
@@ -81,7 +86,6 @@ public class MainFrame extends JFrame {
             }
         });
 
-        // 默认选中第一项
         if (navModel.size() > 0) {
             navList.setSelectedIndex(0);
         }
@@ -94,9 +98,6 @@ public class MainFrame extends JFrame {
         }
         addNavItem("图书销售", new SalesPanel(bookService));
         addNavItem("销售记录", new SalesHistoryPanel(saleService));
-        if (user.isAdmin()) {
-            addNavItem("统计分析", new StatsPanel(bookService));
-        }
     }
 
     private void addNavItem(String name, JPanel panel) {
@@ -104,26 +105,24 @@ public class MainFrame extends JFrame {
         contentPanel.add(panel, name);
     }
 
-    /**
-     * 导航项自定义渲染器。
-     */
     private static class NavCellRenderer extends DefaultListCellRenderer {
         @Override
         public Component getListCellRendererComponent(JList<?> list, Object value, int index,
                                                       boolean isSelected, boolean cellHasFocus) {
             JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
             label.setHorizontalAlignment(SwingConstants.CENTER);
-            label.setBorder(new EmptyBorder(0, 10, 0, 10));
+            label.setBorder(new EmptyBorder(0, 12, 0, 12));
+            label.setOpaque(true);
+
             if (isSelected) {
-                label.setBackground(new Color(41, 128, 185));
+                label.setBackground(PRIMARY_COLOR);
                 label.setForeground(Color.WHITE);
-                label.setFont(label.getFont().deriveFont(Font.BOLD));
+                label.setFont(new Font("Microsoft YaHei", Font.BOLD, 14));
             } else {
                 label.setBackground(list.getBackground());
-                label.setForeground(list.getForeground());
-                label.setFont(label.getFont().deriveFont(Font.PLAIN));
+                label.setForeground(new Color(60, 60, 60));
+                label.setFont(new Font("Microsoft YaHei", Font.PLAIN, 14));
             }
-            label.setOpaque(true);
             return label;
         }
     }
