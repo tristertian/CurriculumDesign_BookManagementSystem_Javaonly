@@ -6,6 +6,7 @@ import com.bms.repository.SaleRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 销售记录业务逻辑层。
@@ -57,5 +58,32 @@ public class SaleService {
      */
     public BigDecimal getTotalAmount() {
         return saleRepository.totalAmount();
+    }
+
+    /**
+     * 按日统计销售额与销量。
+     *
+     * @return 统计结果
+     */
+    public Map<String, BigDecimal[]> statSalesByDay() {
+        return saleRepository.statByDay();
+    }
+
+    /**
+     * 按月统计销售额与销量。
+     *
+     * @return 统计结果
+     */
+    public Map<String, BigDecimal[]> statSalesByMonth() {
+        return saleRepository.statByMonth();
+    }
+
+    /**
+     * 按年统计销售额与销量。
+     *
+     * @return 统计结果
+     */
+    public Map<String, BigDecimal[]> statSalesByYear() {
+        return saleRepository.statByYear();
     }
 }

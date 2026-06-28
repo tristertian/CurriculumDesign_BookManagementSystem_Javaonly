@@ -20,7 +20,7 @@ public class LoginDialog extends JDialog {
     private final JPasswordField passwordField = new JPasswordField(18);
 
     private static final Color PRIMARY_COLOR = new Color(41, 128, 185);
-    private static final Color BG_COLOR = new Color(236, 240, 241);
+    private static final Color BG_COLOR = Color.WHITE;
 
     public LoginDialog(JFrame owner, UserService userService) {
         super(owner, "用户登录", true);
@@ -38,20 +38,20 @@ public class LoginDialog extends JDialog {
         // 顶部标题栏
         JPanel headerPanel = new JPanel();
         headerPanel.setLayout(new BoxLayout(headerPanel, BoxLayout.Y_AXIS));
-        headerPanel.setBackground(PRIMARY_COLOR);
-        headerPanel.setBorder(new EmptyBorder(15, 0, 15, 0));
+        headerPanel.setBackground(BG_COLOR);
+        headerPanel.setBorder(new EmptyBorder(25, 0, 10, 0));
 
         ImageIcon loadingIcon = loadIcon("/icons/loading.png");
         JLabel iconLabel = new JLabel(loadingIcon, SwingConstants.CENTER);
         iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JLabel titleLabel = new JLabel("用户登录", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Microsoft YaHei", Font.BOLD, 20));
-        titleLabel.setForeground(Color.WHITE);
+        titleLabel.setFont(new Font("Microsoft YaHei", Font.BOLD, 22));
+        titleLabel.setForeground(PRIMARY_COLOR);
         titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         headerPanel.add(iconLabel);
-        headerPanel.add(Box.createVerticalStrut(8));
+        headerPanel.add(Box.createVerticalStrut(10));
         headerPanel.add(titleLabel);
         add(headerPanel, BorderLayout.NORTH);
 
@@ -64,21 +64,24 @@ public class LoginDialog extends JDialog {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.anchor = GridBagConstraints.WEST;
 
+        styleTextField(usernameField);
+        styleTextField(passwordField);
+        passwordField.addActionListener(e -> doLogin());
+
         gbc.gridx = 0;
         gbc.gridy = 0;
         formPanel.add(createLabel("用户名"), gbc);
         gbc.gridx = 1;
+        gbc.weightx = 1.0;
         formPanel.add(usernameField, gbc);
 
         gbc.gridx = 0;
         gbc.gridy = 1;
+        gbc.weightx = 0.0;
         formPanel.add(createLabel("密码"), gbc);
         gbc.gridx = 1;
+        gbc.weightx = 1.0;
         formPanel.add(passwordField, gbc);
-
-        styleTextField(usernameField);
-        styleTextField(passwordField);
-        passwordField.addActionListener(e -> doLogin());
 
         add(formPanel, BorderLayout.CENTER);
 

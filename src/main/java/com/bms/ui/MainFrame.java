@@ -113,7 +113,7 @@ public class MainFrame extends JFrame {
 
     private void setupPanels() {
         if (user.isAdmin()) {
-            addNavItem("数据概览", new DataOverviewPanel(bookService));
+            addNavItem("数据概览", new DataOverviewPanel(bookService, saleService));
             addNavItem("库存管理", new InventoryPanel(bookService));
         }
         addNavItem("图书销售", new SalesPanel(bookService));

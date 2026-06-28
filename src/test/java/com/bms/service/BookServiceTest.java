@@ -179,5 +179,20 @@ class BookServiceTest {
                     .map(Sale::getAmount)
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
         }
+
+        @Override
+        public java.util.Map<String, BigDecimal[]> statByDay() {
+            return java.util.Collections.emptyMap();
+        }
+
+        @Override
+        public java.util.Map<String, BigDecimal[]> statByMonth() {
+            return java.util.Collections.emptyMap();
+        }
+
+        @Override
+        public java.util.Map<String, BigDecimal[]> statByYear() {
+            return java.util.Collections.emptyMap();
+        }
     }
 }

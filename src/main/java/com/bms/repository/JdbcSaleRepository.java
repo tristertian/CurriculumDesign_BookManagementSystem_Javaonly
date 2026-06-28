@@ -7,7 +7,9 @@ import java.math.BigDecimal;
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 基于 JDBC 的销售记录数据访问实现。
@@ -92,6 +94,47 @@ public class JdbcSaleRepository implements SaleRepository {
             return BigDecimal.ZERO;
         } catch (SQLException e) {
             throw new RuntimeException("统计销售金额失败: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public Map<String, BigDecimal[]> statByDay() {
+        String sql = "SELECT FORMATDATETIME(sale_time, 'yyyy-MM-dd') AS period, " +
+                "SUM(quantity) AS total_quantity, SUM(amount) AS total_amount " +
+                "FROM sales GROUP BY period ORDER BY period";
+        return executeStatQuery(sql);
+    }
+
+    @Override
+    public Map<String, BigDecimal[]> statByMonth() {
+        String sql = "SELECT FORMATDATETIME(sale_time, 'yyyy-MM') AS period, " +
+                "SUM(quantity) AS total_quantity, SUM(amount) AS total_amount " +
+                "FROM sales GROUP BY period ORDER BY period";
+        return executeStatQuery(sql);
+    }
+
+    @Override
+    public Map<String, BigDecimal[]> statByYear() {
+        String sql = "SELECT FORMATDATETIME(sale_time, 'yyyy') AS period, " +
+                "SUM(quantity) AS total_quantity, SUM(amount) AS total_amount " +
+                "FROM sales GROUP BY period ORDER BY period";
+        return executeStatQuery(sql);
+    }
+
+    private Map<String, BigDecimal[]> executeStatQuery(String sql) {
+        Map<String, BigDecimal[]> result = new LinkedHashMap<>();
+        try (Connection conn = DatabaseUtil.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                String period = rs.getString("period");
+                BigDecimal quantity = BigDecimal.valueOf(rs.getLong("total_quantity"));
+                BigDecimal amount = rs.getBigDecimal("total_amount");
+                result.put(period, new BigDecimal[]{quantity, amount});
+            }
+            return result;
+        } catch (SQLException e) {
+            throw new RuntimeException("销售统计查询失败: " + e.getMessage(), e);
         }
     }
 }

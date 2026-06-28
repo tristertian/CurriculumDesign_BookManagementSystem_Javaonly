@@ -2,6 +2,7 @@ package com.bms.ui;
 
 import com.bms.entity.Book;
 import com.bms.service.BookService;
+import com.bms.service.SaleService;
 import com.opencsv.CSVReader;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -24,6 +25,7 @@ import java.util.List;
 public class DataOverviewPanel extends JPanel {
 
     private final BookService bookService;
+    private final SaleService saleService;
 
     private final BookTableModel tableModel = new BookTableModel();
     private final JTable bookTable = new JTable(tableModel);
@@ -36,8 +38,9 @@ public class DataOverviewPanel extends JPanel {
 
     private static final Color PRIMARY_COLOR = new Color(41, 128, 185);
 
-    public DataOverviewPanel(BookService bookService) {
+    public DataOverviewPanel(BookService bookService, SaleService saleService) {
         this.bookService = bookService;
+        this.saleService = saleService;
         initUI();
         refreshTable();
     }
@@ -51,6 +54,21 @@ public class DataOverviewPanel extends JPanel {
         JLabel titleLabel = new JLabel("数据概览");
         titleLabel.setFont(new Font("Microsoft YaHei", Font.BOLD, 18));
         titleLabel.setForeground(new Color(50, 50, 50));
+        add(titleLabel, BorderLayout.NORTH);
+
+        // 子标签页
+        JTabbedPane tabbedPane = new JTabbedPane();
+        tabbedPane.setFont(new Font("Microsoft YaHei", Font.PLAIN, 13));
+        tabbedPane.addTab("书籍列表", createBookListPanel());
+        tabbedPane.addTab("销售统计", new SalesChartPanel(saleService));
+
+        add(tabbedPane, BorderLayout.CENTER);
+    }
+
+    private JPanel createBookListPanel() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBackground(Color.WHITE);
+        panel.setBorder(new EmptyBorder(10, 0, 0, 0));
 
         // 查询区
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 8));
@@ -75,12 +93,6 @@ public class DataOverviewPanel extends JPanel {
         });
         searchPanel.add(resetButton);
 
-        // 顶部组合
-        JPanel topPanel = new JPanel(new BorderLayout(10, 10));
-        topPanel.setBackground(Color.WHITE);
-        topPanel.add(titleLabel, BorderLayout.NORTH);
-        topPanel.add(searchPanel, BorderLayout.CENTER);
-
         // 信息区
         JPanel infoPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 25, 5));
         infoPanel.setBackground(Color.WHITE);
@@ -88,9 +100,13 @@ public class DataOverviewPanel extends JPanel {
         styleInfoLabel(shownLabel);
         infoPanel.add(totalLabel);
         infoPanel.add(shownLabel);
+
+        JPanel topPanel = new JPanel(new BorderLayout(10, 10));
+        topPanel.setBackground(Color.WHITE);
+        topPanel.add(searchPanel, BorderLayout.CENTER);
         topPanel.add(infoPanel, BorderLayout.SOUTH);
 
-        add(topPanel, BorderLayout.NORTH);
+        panel.add(topPanel, BorderLayout.NORTH);
 
         // 表格区
         bookTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -111,7 +127,7 @@ public class DataOverviewPanel extends JPanel {
                 BorderFactory.createLineBorder(new Color(220, 220, 220)), "书籍列表"));
         tablePanel.add(new JScrollPane(bookTable), BorderLayout.CENTER);
 
-        add(tablePanel, BorderLayout.CENTER);
+        panel.add(tablePanel, BorderLayout.CENTER);
 
         // 操作区
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 5));
@@ -127,7 +143,9 @@ public class DataOverviewPanel extends JPanel {
         buttonPanel.add(importButton);
         buttonPanel.add(exportButton);
 
-        add(buttonPanel, BorderLayout.SOUTH);
+        panel.add(buttonPanel, BorderLayout.SOUTH);
+
+        return panel;
     }
 
     private void stylePrimaryButton(JButton button) {
