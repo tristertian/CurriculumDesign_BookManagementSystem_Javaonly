@@ -26,7 +26,7 @@ public class LoginDialog extends JDialog {
         super(owner, "用户登录", true);
         this.userService = userService;
         initUI();
-        setSize(380, 320);
+        setSize(380, 360);
         setLocationRelativeTo(owner);
         setResizable(false);
     }
@@ -36,13 +36,23 @@ public class LoginDialog extends JDialog {
         setLayout(new BorderLayout());
 
         // 顶部标题栏
-        JPanel headerPanel = new JPanel(new BorderLayout());
+        JPanel headerPanel = new JPanel();
+        headerPanel.setLayout(new BoxLayout(headerPanel, BoxLayout.Y_AXIS));
         headerPanel.setBackground(PRIMARY_COLOR);
         headerPanel.setBorder(new EmptyBorder(15, 0, 15, 0));
+
+        ImageIcon loadingIcon = loadIcon("/icons/loading.png");
+        JLabel iconLabel = new JLabel(loadingIcon, SwingConstants.CENTER);
+        iconLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
         JLabel titleLabel = new JLabel("用户登录", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Microsoft YaHei", Font.BOLD, 20));
         titleLabel.setForeground(Color.WHITE);
-        headerPanel.add(titleLabel, BorderLayout.CENTER);
+        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        headerPanel.add(iconLabel);
+        headerPanel.add(Box.createVerticalStrut(8));
+        headerPanel.add(titleLabel);
         add(headerPanel, BorderLayout.NORTH);
 
         // 表单区
@@ -143,5 +153,14 @@ public class LoginDialog extends JDialog {
 
     public Optional<User> getLoggedInUser() {
         return Optional.ofNullable(loggedInUser);
+    }
+
+    private ImageIcon loadIcon(String path) {
+        java.net.URL url = getClass().getResource(path);
+        if (url == null) {
+            System.err.println("图标加载失败: " + path);
+            return new ImageIcon();
+        }
+        return new ImageIcon(url);
     }
 }

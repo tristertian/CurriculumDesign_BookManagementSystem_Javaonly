@@ -7,6 +7,8 @@ import com.bms.service.SaleService;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 图书管理系统主窗口（左侧导航栏布局）。
@@ -24,13 +26,31 @@ public class MainFrame extends JFrame {
     private static final Color PRIMARY_COLOR = new Color(41, 128, 185);
     private static final Color PRIMARY_DARK = new Color(31, 97, 141);
     private static final Color NAV_BG = new Color(245, 245, 245);
-    private static final Color NAV_HOVER = new Color(230, 230, 230);
+
+    private final Map<String, Icon[]> iconMap = new HashMap<>();
 
     public MainFrame(BookService bookService, SaleService saleService, User user) {
         this.bookService = bookService;
         this.saleService = saleService;
         this.user = user;
+        loadIcons();
         initUI();
+    }
+
+    private void loadIcons() {
+        iconMap.put("数据概览", new Icon[]{loadIcon("/icons/overview_b.png"), loadIcon("/icons/overview_w.png")});
+        iconMap.put("库存管理", new Icon[]{loadIcon("/icons/inventory.png"), loadIcon("/icons/inventory_w.png")});
+        iconMap.put("图书销售", new Icon[]{loadIcon("/icons/sales_b.png"), loadIcon("/icons/sales_w.png")});
+        iconMap.put("销售记录", new Icon[]{loadIcon("/icons/history_b.png"), loadIcon("/icons/history_w.png")});
+    }
+
+    private ImageIcon loadIcon(String path) {
+        java.net.URL url = getClass().getResource(path);
+        if (url == null) {
+            System.err.println("图标加载失败: " + path);
+            return new ImageIcon();
+        }
+        return new ImageIcon(url);
     }
 
     private void initUI() {
@@ -63,10 +83,10 @@ public class MainFrame extends JFrame {
         navList.setFont(new Font("Microsoft YaHei", Font.PLAIN, 14));
         navList.setBorder(new EmptyBorder(10, 0, 10, 0));
         navList.setBackground(NAV_BG);
-        navList.setCellRenderer(new NavCellRenderer());
+        navList.setCellRenderer(new NavCellRenderer(iconMap));
 
         JScrollPane navScrollPane = new JScrollPane(navList);
-        navScrollPane.setPreferredSize(new Dimension(160, 0));
+        navScrollPane.setPreferredSize(new Dimension(170, 0));
         navScrollPane.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(220, 220, 220)));
         add(navScrollPane, BorderLayout.WEST);
 
@@ -106,12 +126,25 @@ public class MainFrame extends JFrame {
     }
 
     private static class NavCellRenderer extends DefaultListCellRenderer {
+
+        private final Map<String, Icon[]> iconMap;
+
+        public NavCellRenderer(Map<String, Icon[]> iconMap) {
+            this.iconMap = iconMap;
+        }
+
         @Override
         public Component getListCellRendererComponent(JList<?> list, Object value, int index,
                                                       boolean isSelected, boolean cellHasFocus) {
             JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-            label.setHorizontalAlignment(SwingConstants.CENTER);
-            label.setBorder(new EmptyBorder(0, 12, 0, 12));
+            String name = (String) value;
+            Icon[] icons = iconMap.get(name);
+            if (icons != null) {
+                label.setIcon(isSelected ? icons[1] : icons[0]);
+                label.setIconTextGap(10);
+            }
+            label.setHorizontalAlignment(SwingConstants.LEFT);
+            label.setBorder(new EmptyBorder(0, 20, 0, 12));
             label.setOpaque(true);
 
             if (isSelected) {
